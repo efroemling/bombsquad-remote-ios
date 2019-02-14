@@ -14,6 +14,7 @@
 		2B9195CB11E66BE90007EFA5 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B9195CA11E66BE90007EFA5 /* UIKit.framework */; };
 		2D500B1C0D5A766900DBA0E3 /* AppController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2D500B1B0D5A766900DBA0E3 /* AppController.mm */; };
 		4A50295F0DF7068E00D72A3B /* BrowserViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 4A50295E0DF7068E00D72A3B /* BrowserViewController.mm */; };
+		517554C3213AE25D008E45E9 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 517554C2213AE25D008E45E9 /* LaunchScreen.storyboard */; };
 		57075AAE132F3005000BDA11 /* HelpViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 57075AAC132F3005000BDA11 /* HelpViewController.m */; };
 		57075AAF132F3005000BDA11 /* HelpViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 57075AAD132F3005000BDA11 /* HelpViewController.xib */; };
 		572FB64D12DDAEB700F4E25A /* tableBG.png in Resources */ = {isa = PBXBuildFile; fileRef = 572FB64C12DDAEB700F4E25A /* tableBG.png */; };
@@ -98,6 +99,7 @@
 		32CA4F630368D1EE00C91783 /* Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Prefix.pch; sourceTree = "<group>"; };
 		4A50295D0DF7068E00D72A3B /* BrowserViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BrowserViewController.h; path = Networking/BrowserViewController.h; sourceTree = "<group>"; };
 		4A50295E0DF7068E00D72A3B /* BrowserViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = BrowserViewController.mm; path = Networking/BrowserViewController.mm; sourceTree = "<group>"; };
+		517554C2213AE25D008E45E9 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		57075AAB132F3005000BDA11 /* HelpViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HelpViewController.h; sourceTree = "<group>"; };
 		57075AAC132F3005000BDA11 /* HelpViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HelpViewController.m; sourceTree = "<group>"; };
 		57075AAD132F3005000BDA11 /* HelpViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = HelpViewController.xib; sourceTree = "<group>"; };
@@ -320,6 +322,7 @@
 				574AD65212D9118900E1C09A /* RemoteViewController.mm */,
 				579649B212E7FFE900D2C092 /* UIViewUtilities.h */,
 				579649B312E7FFE900D2C092 /* UIViewUtilities.mm */,
+				517554C2213AE25D008E45E9 /* LaunchScreen.storyboard */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -400,6 +403,7 @@
 				57A502C112EBFFD000D20949 /* buttonJumpPressed@2x.png in Resources */,
 				578B669917EA780A0038F30B /* Icon-76.png in Resources */,
 				57F51AF812EC02C800B63B25 /* buttonPunch.png in Resources */,
+				517554C3213AE25D008E45E9 /* LaunchScreen.storyboard in Resources */,
 				57F51AF912EC02C800B63B25 /* buttonPunch@2x.png in Resources */,
 				57F51AFA12EC02C800B63B25 /* buttonPunchPressed.png in Resources */,
 				57F51AFB12EC02C800B63B25 /* buttonPunchPressed@2x.png in Resources */,

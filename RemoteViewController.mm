@@ -909,6 +909,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type, CFData
 
   float width = self.view.bounds.size.width;
   float height = self.view.bounds.size.height;
+    
+  if (@available(iOS 11.0, *)) {
+        
+    width = width - UIApplication.sharedApplication.keyWindow.safeAreaInsets.left;
+  }
 
   UIImageView *i;
   CGRect f;
@@ -932,9 +937,17 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type, CFData
   _bgImage.frame = self.view.bounds;
   _bgImage.opaque = YES;
   [self.view addSubview:_bgImage];
-
+  
+  CGFloat lagMeterXAxis = (width-60)/2.0;
+  CGFloat lagMeterYAxis = height-12;
+  
+  if (@available(iOS 11.0, *)) {
+      
+    lagMeterYAxis = lagMeterYAxis -UIApplication.sharedApplication.keyWindow.safeAreaInsets.bottom;
+  }
+    
   self.lagMeter = [[UILabel alloc] init];
-  _lagMeter.frame = CGRectMake((width-60)/2.0,height-12,60,12);
+  _lagMeter.frame = CGRectMake(lagMeterXAxis,lagMeterYAxis,60,12);
   _lagMeter.textAlignment = NSTextAlignmentCenter;
   _lagMeter.textColor = [UIColor clearColor];
   _lagMeter.backgroundColor = [UIColor clearColor];
@@ -955,6 +968,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type, CFData
     CGRect fBase;
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
       fBase = CGRectMake(0,height/2-120,200,200);
+    }
+    else if (@available(iOS 11.0, *)) {
+        fBase = CGRectMake(UIApplication.sharedApplication.keyWindow.safeAreaInsets.left*2,height*0.65-120,200,200);
     }
     else{
       //fBase = CGRectMake(0,height - 240,200,200);
@@ -1102,7 +1118,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type, CFData
     b.frame = CGRectMake(width/2-(buttonWidth/2),10,buttonWidth,buttonHeight);
     b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin;
 
-  } else {
+  }else if (@available(iOS 11.0, *)) {
+      
+      b.frame = CGRectMake((buttonWidth*0.6*1.3)+UIApplication.sharedApplication.keyWindow.safeAreaInsets.left,5,buttonWidth*0.6,buttonHeight*0.6);
+      b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
+  }else {
     b.frame = CGRectMake(buttonWidth*0.6*1.3,5,buttonWidth*0.6,buttonHeight*0.6);
     b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
   }
@@ -1117,7 +1137,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type, CFData
   if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
     b.frame = CGRectMake(10,10,buttonWidth,buttonHeight);
     b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
-  } else {
+  }else if (@available(iOS 11.0, *)) {
+      
+      b.frame = CGRectMake(UIApplication.sharedApplication.keyWindow.safeAreaInsets.left+5,5,buttonWidth*0.6,buttonHeight*0.6);
+      b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
+  }else {
     b.frame = CGRectMake(5,5,buttonWidth*0.6,buttonHeight*0.6);
     b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
   }
@@ -1131,7 +1155,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type, CFData
     b.frame = CGRectMake(width-buttonWidth*1.0-10,10,buttonWidth*1.0,buttonHeight*1.0);
     b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
 
-  } else {
+  }else  if (@available(iOS 11.0, *)) {
+      
+      b.frame = CGRectMake((buttonWidth*0.6*2.6)+UIApplication.sharedApplication.keyWindow.safeAreaInsets.left,5,buttonWidth*0.6,buttonHeight*0.6);
+      b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
+  }else {
     b.frame = CGRectMake(buttonWidth*0.6*2.6,5,buttonWidth*0.6,buttonHeight*0.6);
     b.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
 
