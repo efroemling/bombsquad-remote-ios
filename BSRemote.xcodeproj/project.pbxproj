@@ -85,6 +85,7 @@
 		57F51C1E12EC24C200B63B25 /* thumbPressed@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 57F51C1C12EC24C200B63B25 /* thumbPressed@2x.png */; };
 		57F5207412ED3A5600B63B25 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 57F5207312ED3A5600B63B25 /* Default.png */; };
 		57F5209E12ED49A100B63B25 /* controllerBG~ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 57F5209D12ED49A100B63B25 /* controllerBG~ipad.png */; };
+		57FAF1322216450800451D90 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 57FAF1312216450800451D90 /* Media.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -176,6 +177,7 @@
 		57F51C1C12EC24C200B63B25 /* thumbPressed@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "thumbPressed@2x.png"; path = "Resources/Images/thumbPressed@2x.png"; sourceTree = "<group>"; };
 		57F5207312ED3A5600B63B25 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
 		57F5209D12ED49A100B63B25 /* controllerBG~ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "controllerBG~ipad.png"; path = "Resources/Images/controllerBG~ipad.png"; sourceTree = "<group>"; };
+		57FAF1312216450800451D90 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Media.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -278,6 +280,7 @@
 				578B669617EA780A0038F30B /* Icon-76@2x.png */,
 				57F28B792216246E0070E203 /* Icon-83.5@2x.png */,
 				2B91972911E675710007EFA5 /* Info.plist */,
+				57FAF1312216450800451D90 /* Media.xcassets */,
 				572FB64C12DDAEB700F4E25A /* tableBG.png */,
 				57AC1270160AD85A00221FC8 /* logo.png */,
 				57AC1271160AD85A00221FC8 /* logo@2x.png */,
@@ -403,6 +406,7 @@
 				57A502A912EBFEA800D20949 /* buttonJump.png in Resources */,
 				57A502AA12EBFEA800D20949 /* buttonJump@2x.png in Resources */,
 				57A502C012EBFFD000D20949 /* buttonJumpPressed.png in Resources */,
+				57FAF1322216450800451D90 /* Media.xcassets in Resources */,
 				57A502C112EBFFD000D20949 /* buttonJumpPressed@2x.png in Resources */,
 				578B669917EA780A0038F30B /* Icon-76.png in Resources */,
 				57F51AF812EC02C800B63B25 /* buttonPunch.png in Resources */,
@@ -480,6 +484,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
@@ -512,6 +517,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
@@ -551,6 +557,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;

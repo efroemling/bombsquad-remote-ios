@@ -19,6 +19,7 @@ ICON_TARGETS = $(IMAGE_RESOURCE_INST_DIR)/Icon.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon@2x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-60.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-60@2x.png\
+               $(IMAGE_RESOURCE_INST_DIR)/Icon-60@3x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-72.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-72@2x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-76.png\
@@ -26,8 +27,10 @@ ICON_TARGETS = $(IMAGE_RESOURCE_INST_DIR)/Icon.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-83.5@2x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small@2x.png\
+               $(IMAGE_RESOURCE_INST_DIR)/Icon-Small@3x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40@2x.png\
+               $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40@3x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-50.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-50@2x.png\
                $(IMAGE_WEB_INST_DIR)/IconItunes.png\
@@ -84,6 +87,9 @@ $(IMAGE_RESOURCE_INST_DIR)/Icon-60.png: ImagesMisc/Icon.psd
 $(IMAGE_RESOURCE_INST_DIR)/Icon-60@2x.png: ImagesMisc/Icon.psd
 	@echo Creating image: $@
 	@./convertUtil convertImageToSize 120 120 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-60@2x.png
+$(IMAGE_RESOURCE_INST_DIR)/Icon-60@3x.png: ImagesMisc/Icon.psd
+	@echo Creating image: $@
+	@./convertUtil convertImageToSize 180 180 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-60@3x.png
 $(IMAGE_RESOURCE_INST_DIR)/Icon-72.png: ImagesMisc/Icon.psd
 	@echo Creating image: $@
 	@./convertUtil convertImageToSize 72 72 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-72.png
@@ -105,12 +111,18 @@ $(IMAGE_RESOURCE_INST_DIR)/Icon-Small.png: ImagesMisc/Icon.psd
 $(IMAGE_RESOURCE_INST_DIR)/Icon-Small@2x.png: ImagesMisc/Icon.psd
 	@echo Creating image: $@
 	@./convertUtil convertImageToSize 58 58 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-Small@2x.png
+$(IMAGE_RESOURCE_INST_DIR)/Icon-Small@3x.png: ImagesMisc/Icon.psd
+	@echo Creating image: $@
+	@./convertUtil convertImageToSize 87 87 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-Small@3x.png
 $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40.png: ImagesMisc/Icon.psd
 	@echo Creating image: $@
 	@./convertUtil convertImageToSize 40 40 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40.png
 $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40@2x.png: ImagesMisc/Icon.psd
 	@echo Creating image: $@
 	@./convertUtil convertImageToSize 80 80 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40@2x.png
+$(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40@3x.png: ImagesMisc/Icon.psd
+	@echo Creating image: $@
+	@./convertUtil convertImageToSize 120 120 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40@3x.png
 $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-50.png: ImagesMisc/Icon.psd
 	@echo Creating image: $@
 	@./convertUtil convertImageToSize 50 50 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-50.png
