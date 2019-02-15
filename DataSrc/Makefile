@@ -23,6 +23,7 @@ ICON_TARGETS = $(IMAGE_RESOURCE_INST_DIR)/Icon.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-72@2x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-76.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-76@2x.png\
+               $(IMAGE_RESOURCE_INST_DIR)/Icon-83.5@2x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small@2x.png\
                $(IMAGE_RESOURCE_INST_DIR)/Icon-Small-40.png\
@@ -95,6 +96,9 @@ $(IMAGE_RESOURCE_INST_DIR)/Icon-76.png: ImagesMisc/Icon.psd
 $(IMAGE_RESOURCE_INST_DIR)/Icon-76@2x.png: ImagesMisc/Icon.psd
 	@echo Creating image: $@
 	@./convertUtil convertImageToSize 152 152 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-76@2x.png
+$(IMAGE_RESOURCE_INST_DIR)/Icon-83.5@2x.png: ImagesMisc/Icon.psd
+	@echo Creating image: $@
+	@./convertUtil convertImageToSize 167 167 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-83.5@2x.png
 $(IMAGE_RESOURCE_INST_DIR)/Icon-Small.png: ImagesMisc/Icon.psd
 	@echo Creating image: $@
 	@./convertUtil convertImageToSize 29 29 ImagesMisc/Icon.psd $(IMAGE_RESOURCE_INST_DIR)/Icon-Small.png

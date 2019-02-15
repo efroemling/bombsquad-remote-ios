@@ -772,8 +772,14 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type, CFData
             
             UInt8 data[1] = {BS_REMOTE_MSG_GAME_QUERY};
             
-            int err = static_cast<int>(sendto(_scanSocketRaw,data,1,0,(sockaddr*)&broadcastAddr,sizeof(broadcastAddr)));
-            if (err == -1) NSLog(@"ERROR %d on sendto for scanner socket\n",errno);
+            int err = static_cast<int>(sendto(_scanSocketRaw, data, 1, 0, (sockaddr*)&broadcastAddr,
+              sizeof(broadcastAddr)));
+            if (err == -1) {
+              // let's note only unexpected errors...
+              if (errno != EHOSTDOWN && errno != EHOSTUNREACH) {
+                NSLog(@"ERROR %d on sendto for scanner socket\n", errno);
+              }
+            }
             
             //cout << "ADDR IS " << ((addr>>24)&0xFF) << "." << ((addr>>16)&0xFF) << "." << ((addr>>8)&0xFF) << "." << ((addr>>0)&0xFF) << endl;
             //cout << "NETMASK IS " << ((subnet>>24)&0xFF) << "." << ((subnet>>16)&0xFF) << "." << ((subnet>>8)&0xFF) << "." << ((subnet>>0)&0xFF) << endl;
