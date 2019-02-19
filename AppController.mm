@@ -74,10 +74,8 @@ AppController *gApp;
       autorelease];
   [_window setBackgroundColor:[UIColor darkGrayColor]];
 
-  self.browserViewController =
-      [[[BrowserViewController alloc] initWithTitle:@"BombSquad Remote"
-                           showDisclosureIndicators:NO
-                                   showCancelButton:NO] autorelease];
+  self.browserViewController = [[[BrowserViewController alloc]
+      initWithTitle:@"BombSquad Remote"] autorelease];
   self.browserViewController.delegate = self;
   self.browserViewController.searchingForServicesString =
       @"Searching For Games";

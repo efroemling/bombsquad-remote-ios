@@ -32,13 +32,6 @@ struct BSRemoteGameEntry {
 @private
   id<BrowserViewControllerDelegate> _delegate;
   NSString *_searchingForServicesString;
-  NSString *_ownName;
-  NSNetService *_ownEntry;
-  BOOL _showDisclosureIndicators;
-  // NSMutableArray *_games;
-  NSMutableArray *_bonjourGames;
-  NSNetServiceBrowser *_netServiceBrowser;
-  NSNetService *_currentResolve;
   NSTimer *_timer;
   NSTimer *_titleTimer;
   BOOL _needsActivityIndicator;
@@ -54,16 +47,12 @@ struct BSRemoteGameEntry {
 
 @property(nonatomic, assign) id<BrowserViewControllerDelegate> delegate;
 @property(nonatomic, copy) NSString *searchingForServicesString;
-@property(nonatomic, copy) NSString *ownName;
 @property(nonatomic, retain) UIImageView *tableBG;
 @property(nonatomic, retain) UIImageView *logo;
 @property(nonatomic, retain) UIButton *nameButton;
 @property(nonatomic, retain) UIButton *manualButton;
 
-- (id)initWithTitle:(NSString *)title
-    showDisclosureIndicators:(BOOL)showDisclosureIndicators
-            showCancelButton:(BOOL)showCancelButton;
-- (BOOL)searchForServicesOfType:(NSString *)type inDomain:(NSString *)domain;
+- (id)initWithTitle:(NSString *)title;
 - (void)stop;
 - (void)start;
 

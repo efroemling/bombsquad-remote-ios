@@ -14,33 +14,12 @@
 
 using namespace std;
 
-// A category on NSNetService that's used to sort NSNetService objects by their
-// name.
-@interface NSNetService (BrowserViewControllerAdditions)
-- (NSComparisonResult)localizedCaseInsensitiveCompareByName:
-    (NSNetService *)aService;
-@end
-
-@implementation NSNetService (BrowserViewControllerAdditions)
-- (NSComparisonResult)localizedCaseInsensitiveCompareByName:
-    (NSNetService *)aService {
-  return [[self name] localizedCaseInsensitiveCompare:[aService name]];
-}
-@end
-
 @interface BrowserViewController ()
-@property(nonatomic, retain, readwrite) NSNetService *ownEntry;
-@property(nonatomic, assign, readwrite) BOOL showDisclosureIndicators;
-@property(nonatomic, retain, readwrite) NSMutableArray *bonjourGames;
-@property(nonatomic, retain, readwrite) NSNetServiceBrowser *netServiceBrowser;
-@property(nonatomic, retain, readwrite) NSNetService *currentResolve;
-@property(nonatomic, retain, readwrite) NSTimer *timer;
 @property(nonatomic, assign, readwrite) BOOL needsActivityIndicator;
 @property(nonatomic, assign, readwrite) BOOL initialWaitOver;
 
 @property(nonatomic, retain, readwrite) NSTimer *titleTimer;
 
-- (void)stopCurrentResolve;
 - (void)initialWaitOver:(NSTimer *)timer;
 - (void)showPrefs;
 - (void)showHelp;
@@ -53,13 +32,7 @@ using namespace std;
 @implementation BrowserViewController
 
 @synthesize delegate = _delegate;
-@synthesize ownEntry = _ownEntry;
-@synthesize showDisclosureIndicators = _showDisclosureIndicators;
-@synthesize currentResolve = _currentResolve;
-@synthesize netServiceBrowser = _netServiceBrowser;
-@synthesize bonjourGames = _bonjourGames;
 @synthesize needsActivityIndicator = _needsActivityIndicator;
-@dynamic timer;
 @dynamic titleTimer;
 @synthesize initialWaitOver = _initialWaitOver;
 @synthesize tableBG = _tableBG;
@@ -67,23 +40,10 @@ using namespace std;
 @synthesize manualButton = _manualButton;
 @synthesize logo = _logo;
 
-- (id)initWithTitle:(NSString *)title
-    showDisclosureIndicators:(BOOL)show
-            showCancelButton:(BOOL)showCancelButton {
+- (id)initWithTitle:(NSString *)title {
 
   if ((self = [super initWithStyle:UITableViewStylePlain])) {
     self.title = title;
-    _bonjourGames = [[NSMutableArray alloc] init];
-    self.showDisclosureIndicators = show;
-    if (showCancelButton) {
-      // add Cancel button as the nav bar's custom right view
-      UIBarButtonItem *addButton = [[UIBarButtonItem alloc]
-          initWithBarButtonSystemItem:UIBarButtonSystemItemCancel
-                               target:self
-                               action:@selector(cancelAction)];
-      self.navigationItem.rightBarButtonItem = addButton;
-      [addButton release];
-    }
 
     // Make sure we have a chance to discover devices before showing the user
     // that nothing was found (yet)
@@ -116,10 +76,6 @@ using namespace std;
   }
 
   // clear any existing...
-  [self stopCurrentResolve];
-  [self.netServiceBrowser stop];
-  self.netServiceBrowser = nil;
-  [self.bonjourGames removeAllObjects];
   [self.tableView reloadData];
 }
 
@@ -170,6 +126,7 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 }
 
 - (void)start {
+
   // create our scan socket...
   if (_scanSocket == NULL) {
     CFSocketContext socketCtxt = {0, self, NULL, NULL, NULL};
@@ -181,9 +138,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
       NSLog(@"ERROR CREATING IPv4 SCANNER SOCKET");
       abort();
     }
+
     // bind it to a any port
     if (_scanSocket != NULL) {
-      // bind it...
       struct sockaddr_in addr4;
       memset(&addr4, 0, sizeof(addr4));
       addr4.sin_len = sizeof(addr4);
@@ -219,17 +176,6 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
       }
     }
   }
-
-  // clear any existing...
-  [self stopCurrentResolve];
-  [self.netServiceBrowser stop];
-  self.netServiceBrowser = nil;
-  [self.bonjourGames removeAllObjects];
-
-  // start anew..
-  [self searchForServicesOfType:[NSString stringWithFormat:@"_%@._udp.",
-                                                           kGameIdentifier]
-                       inDomain:@""];
 }
 
 - (void)viewDidLoad {
@@ -474,82 +420,6 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   [_manualButton removeFromSuperview];
 }
 
-// Holds the string that's displayed in the table view during service discovery.
-- (void)setSearchingForServicesString:(NSString *)searchingForServicesString {
-  if (_searchingForServicesString != searchingForServicesString) {
-    [_searchingForServicesString release];
-    _searchingForServicesString = [searchingForServicesString copy];
-
-    // If there are no services, reload the table to ensure that
-    // searchingForServicesString appears.
-    if ([self.bonjourGames count] == 0) {
-      [self.tableView reloadData];
-    }
-  }
-}
-
-- (NSString *)ownName {
-  return _ownName;
-}
-
-// Holds the string that's displayed in the table view during service discovery.
-- (void)setOwnName:(NSString *)name {
-  if (_ownName != name) {
-    _ownName = [name copy];
-
-    if (self.ownEntry) {
-      [self.bonjourGames addObject:self.ownEntry];
-    }
-
-    NSNetService *service;
-
-    for (service in self.bonjourGames) {
-      if ([service.name isEqual:name]) {
-        self.ownEntry = service;
-        [_bonjourGames removeObject:service];
-        break;
-      }
-    }
-
-    [self.tableView reloadData];
-  }
-}
-
-// Creates an NSNetServiceBrowser that searches for services of a particular
-// type in a particular domain. If a service is currently being resolved, stop
-// resolving it and stop the service browser from discovering other services.
-- (BOOL)searchForServicesOfType:(NSString *)type inDomain:(NSString *)domain {
-
-  [self stopCurrentResolve];
-  [self.netServiceBrowser stop];
-  [self.bonjourGames removeAllObjects];
-
-  NSNetServiceBrowser *aNetServiceBrowser = [[NSNetServiceBrowser alloc] init];
-  if (!aNetServiceBrowser) {
-    // The NSNetServiceBrowser couldn't be allocated and initialized.
-    return NO;
-  }
-
-  aNetServiceBrowser.delegate = self;
-  self.netServiceBrowser = aNetServiceBrowser;
-  [aNetServiceBrowser release];
-  [self.netServiceBrowser searchForServicesOfType:type inDomain:domain];
-  [self.tableView reloadData];
-  return YES;
-}
-
-- (NSTimer *)timer {
-  return _timer;
-}
-
-// When this is called, invalidate the existing timer before releasing it.
-- (void)setTimer:(NSTimer *)newTimer {
-  [_timer invalidate];
-  [newTimer retain];
-  [_timer release];
-  _timer = newTimer;
-}
-
 - (NSTimer *)titleTimer {
   return _titleTimer;
 }
@@ -571,18 +441,8 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 
   if (_games.size() > 0) {
     return _games.size();
-  } else {
-    // If there are no services and searchingForServicesString is set, show one
-    // row to tell the user.
-    NSUInteger count = [self.bonjourGames count];
-
-    if (count == 0 && self.searchingForServicesString && self.initialWaitOver) {
-      return 1;
-    } else if (count == 0) {
-      return 0;
-    }
-    return count;
   }
+  return 0;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView
@@ -605,9 +465,7 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     cell.backgroundColor = [UIColor clearColor];
   }
 
-  // NSUInteger count = [self.bonjourGames count];
-  if ([self.bonjourGames count] == 0 and _games.size() == 0 and
-      self.searchingForServicesString) {
+  if (_games.size() == 0 and self.searchingForServicesString) {
     // If there are no services and searchingForServicesString is set, show one
     // row explaining that to the user.
 
@@ -674,35 +532,7 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     }
     cell.accessoryView = nil;
   } else {
-    // old bonjour stuff..
-    // Set up the text for the cell
-    NSNetService *service = [self.bonjourGames objectAtIndex:indexPath.row];
-    cell.textLabel.text = [service name];
-    cell.accessoryType = self.showDisclosureIndicators
-                             ? UITableViewCellAccessoryDisclosureIndicator
-                             : UITableViewCellAccessoryNone;
-
-    // Note that the underlying array could have changed, and we want to show
-    // the activity indicator on the correct cell
-    if (self.needsActivityIndicator && self.currentResolve == service) {
-      if (!cell.accessoryView) {
-        CGRect frame = CGRectMake(0.0, 0.0, kProgressIndicatorSize,
-                                  kProgressIndicatorSize);
-        UIActivityIndicatorView *spinner =
-            [[UIActivityIndicatorView alloc] initWithFrame:frame];
-        [spinner startAnimating];
-        spinner.activityIndicatorViewStyle = UIActivityIndicatorViewStyleGray;
-        [spinner sizeToFit];
-        spinner.autoresizingMask = (UIViewAutoresizingFlexibleLeftMargin |
-                                    UIViewAutoresizingFlexibleRightMargin |
-                                    UIViewAutoresizingFlexibleTopMargin |
-                                    UIViewAutoresizingFlexibleBottomMargin);
-        cell.accessoryView = spinner;
-        [spinner release];
-      }
-    } else if (cell.accessoryView) {
-      cell.accessoryView = nil;
-    }
+    NSLog(@"Obsolete bonjour code path; should not happen.");
   }
   cell.textLabel.textColor = [UIColor blackColor];
   cell.textLabel.font = [UIFont boldSystemFontOfSize:24];
@@ -715,19 +545,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   // Ignore the selection if there are no services as the
   // searchingForServicesString cell may be visible and tapping it would do
   // nothing
-  if ([self.bonjourGames count] == 0 and _games.size() == 0)
+  if (_games.size() == 0) {
     return nil;
+  }
 
   return indexPath;
-}
-
-- (void)stopCurrentResolve {
-
-  self.needsActivityIndicator = NO;
-  self.timer = nil;
-
-  [self.currentResolve stop];
-  self.currentResolve = nil;
 }
 
 - (void)tableView:(UITableView *)tableView
@@ -736,81 +558,18 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   // new simple style
   if (_games.size() > 0) {
     int index = 0;
-    for (map<string, BSRemoteGameEntry>::iterator i = _games.begin();
-         i != _games.end(); i++) {
+    for (auto i : _games) {
       if (index == indexPath.row) {
-        // cout << "THEY TAPPED ON " << i->first << endl;
+        // cout << "THEY TAPPED ON " << i.first << endl;
         [self.delegate browserViewController:self
-                            didSelectAddress:i->second.addr
-                                    withSize:i->second.addrSize];
+                            didSelectAddress:i.second.addr
+                                    withSize:i.second.addrSize];
         break;
       }
       index++;
     }
   } else {
-    // If another resolve was running, stop it & remove the activity indicator
-    // from that cell
-    if (self.currentResolve) {
-      // Get the indexPath for the active resolve cell
-      NSIndexPath *indexPath = [NSIndexPath
-          indexPathForRow:[self.bonjourGames indexOfObject:self.currentResolve]
-                inSection:0];
-
-      // Stop the current resolve, which will also set
-      // self.needsActivityIndicator
-      [self stopCurrentResolve];
-
-      // If we found the indexPath for the row, reload that cell to remove the
-      // activity indicator
-      if (indexPath.row != NSNotFound)
-        [self.tableView
-            reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath]
-                  withRowAnimation:UITableViewRowAnimationNone];
-    }
-
-    // Then set the current resolve to the service corresponding to the tapped
-    // cell
-    self.currentResolve = [self.bonjourGames objectAtIndex:indexPath.row];
-    [self.currentResolve setDelegate:self];
-
-    // Attempt to resolve the service. A value of 0.0 sets an unlimited time to
-    // resolve it. The user can choose to cancel the resolve by selecting
-    // another service in the table view.
-    [self.currentResolve resolveWithTimeout:0.0];
-
-    // Make sure we give the user some feedback that the resolve is happening.
-    // We will be called back asynchronously, so we don't want the user to think
-    // we're just stuck. We delay showing this activity indicator in case the
-    // service is resolved quickly.
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:1.0
-                                                  target:self
-                                                selector:@selector(showWaiting:)
-                                                userInfo:self.currentResolve
-                                                 repeats:NO];
-  }
-}
-
-// If necessary, sets up state to show an activity indicator to let the user
-// know that a resolve is occuring.
-- (void)showWaiting:(NSTimer *)timer {
-
-  if (timer == self.timer) {
-    NSNetService *service = (NSNetService *)[self.timer userInfo];
-    if (self.currentResolve == service) {
-      self.needsActivityIndicator = YES;
-
-      NSIndexPath *indexPath = [NSIndexPath
-          indexPathForRow:[self.bonjourGames indexOfObject:self.currentResolve]
-                inSection:0];
-      if (indexPath.row != NSNotFound) {
-        [self.tableView
-            reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath]
-                  withRowAnimation:UITableViewRowAnimationNone];
-        // Deselect the row since the activity indicator shows the user
-        // something is happening.
-        [self.tableView deselectRowAtIndexPath:indexPath animated:YES];
-      }
-    }
+    NSLog(@"Game entries not present for row select; shouldn't happen!");
   }
 }
 
@@ -888,82 +647,16 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   }
 
   // updates our 'searching' txt
-  if ([self.bonjourGames count] == 0 and _games.size() == 0) {
+  if (_games.size() == 0) {
     [self.tableView reloadData];
   }
 }
 
 - (void)initialWaitOver:(NSTimer *)timer {
   self.initialWaitOver = YES;
-  if (![self.bonjourGames count]) {
+  if (_games.size() == 0) {
     [self.tableView reloadData];
   }
-}
-
-- (void)sortAndUpdateUI {
-  // Sort the services by name.
-  [self.bonjourGames
-      sortUsingSelector:@selector(localizedCaseInsensitiveCompareByName:)];
-  [self.tableView reloadData];
-}
-
-- (void)netServiceBrowser:(NSNetServiceBrowser *)netServiceBrowser
-         didRemoveService:(NSNetService *)service
-               moreComing:(BOOL)moreComing {
-  // If a service went away, stop resolving it if it's currently being resolved,
-  // remove it from the list and update the table view if no more events are
-  // queued.
-
-  if (self.currentResolve && [service isEqual:self.currentResolve]) {
-    [self stopCurrentResolve];
-  }
-  [self.bonjourGames removeObject:service];
-  if (self.ownEntry == service)
-    self.ownEntry = nil;
-
-  // If moreComing is NO, it means that there are no more messages in the queue
-  // from the Bonjour daemon, so we should update the UI. When moreComing is
-  // set, we don't update the UI so that it doesn't 'flash'.
-  if (!moreComing) {
-    [self sortAndUpdateUI];
-  }
-}
-
-- (void)netServiceBrowser:(NSNetServiceBrowser *)netServiceBrowser
-           didFindService:(NSNetService *)service
-               moreComing:(BOOL)moreComing {
-  // If a service came online, add it to the list and update the table view if
-  // no more events are queued.
-  if ([service.name isEqual:self.ownName]) {
-    self.ownEntry = service;
-  } else {
-    [self.bonjourGames addObject:service];
-  }
-
-  // If moreComing is NO, it means that there are no more messages in the queue
-  // from the Bonjour daemon, so we should update the UI. When moreComing is
-  // set, we don't update the UI so that it doesn't 'flash'.
-  if (!moreComing) {
-    [self sortAndUpdateUI];
-  }
-}
-
-// This should never be called, since we resolve with a timeout of 0.0, which
-// means indefinite
-- (void)netService:(NSNetService *)sender
-     didNotResolve:(NSDictionary *)errorDict {
-  [self stopCurrentResolve];
-  [self.tableView reloadData];
-}
-
-- (void)netServiceDidResolveAddress:(NSNetService *)service {
-  assert(service == self.currentResolve);
-
-  [service retain];
-  [self stopCurrentResolve];
-
-  [self.delegate browserViewController:self didResolveInstance:service];
-  [service release];
 }
 
 - (void)cancelAction {
@@ -983,13 +676,7 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 
 - (void)dealloc {
   // Cleanup any running resolve and free memory
-  [self stopCurrentResolve];
-  self.bonjourGames = nil;
-  [self.netServiceBrowser stop];
-  self.netServiceBrowser = nil;
   [_searchingForServicesString release];
-  [_ownName release];
-  [_ownEntry release];
   self.tableBG = nil;
   self.logo = nil;
   self.titleTimer = nil;
