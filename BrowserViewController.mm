@@ -442,6 +442,12 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   if (_games.size() > 0) {
     return _games.size();
   }
+  // special case - say '1' when we're searching so we can show
+  // or searching widget.
+  if (self.searchingForServicesString && self.initialWaitOver) {
+    return 1;
+  }
+
   return 0;
 }
 
