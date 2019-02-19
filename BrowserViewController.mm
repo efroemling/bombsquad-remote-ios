@@ -523,16 +523,15 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   if (_games.size() > 0) {
     int index = 0;
     cell.textLabel.text = @"unknown";
-    for (map<string, BSRemoteGameEntry>::iterator i = _games.begin();
-         i != _games.end(); i++) {
+    for (auto i: _games) {
       if (index == indexPath.row) {
-        cell.textLabel.text = [NSString stringWithUTF8String:i->first.c_str()];
+        cell.textLabel.text = [NSString stringWithUTF8String:i.first.c_str()];
       }
       index++;
     }
     cell.accessoryView = nil;
   } else {
-    NSLog(@"Obsolete bonjour code path; should not happen.");
+    NSLog(@"Obsolete bonjour code path; should not get here.");
   }
   cell.textLabel.textColor = [UIColor blackColor];
   cell.textLabel.font = [UIFont boldSystemFontOfSize:24];
@@ -624,7 +623,6 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
       }
     }
   }
-  // cout <<"CHECKING FOR OLD GAMES"<< endl;
 
   CFTimeInterval curTime = CACurrentMediaTime();
 

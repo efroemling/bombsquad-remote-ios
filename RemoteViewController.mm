@@ -1001,7 +1001,8 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   _bgImage.opaque = YES;
   [self.view addSubview:_bgImage];
 
-  CGFloat lagMeterXAxis = (width - 60) / 2.0;
+  // use raw width for lag meter so we don't get skewed to the side due to notch
+  CGFloat lagMeterXAxis = (self.view.bounds.size.width - 60) / 2.0;
   CGFloat lagMeterYAxis = height - 12;
 
   if (@available(iOS 11.0, *)) {
@@ -1299,8 +1300,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 }
 
 - (void)showActivityIndicator {
-  if (self.activityIndicator != nil)
+  if (self.activityIndicator != nil) {
     return;
+  }
 
   self.activityIndicator = [[[UIActivityIndicatorView alloc]
       initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge]
