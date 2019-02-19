@@ -1,4 +1,3 @@
-#import <Foundation/NSNetServices.h>
 #import <UIKit/UIKit.h>
 
 @class BrowserViewController;
@@ -19,15 +18,12 @@ struct BSRemoteGameEntry {
 // instances from the list. The ref parameter will be the selected (already
 // resolved) instance or nil if the user taps the 'Cancel' button (if shown).
 - (void)browserViewController:(BrowserViewController *)bvc
-           didResolveInstance:(NSNetService *)ref;
-- (void)browserViewController:(BrowserViewController *)bvc
              didSelectAddress:(struct sockaddr)addr
                      withSize:(int)size;
 @end
 
 @interface BrowserViewController
-    : UITableViewController <NSNetServiceDelegate, NSNetServiceBrowserDelegate,
-                             UITextFieldDelegate> {
+    : UITableViewController <UITextFieldDelegate> {
 
 @private
   id<BrowserViewControllerDelegate> _delegate;

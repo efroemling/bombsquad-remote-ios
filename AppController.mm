@@ -50,7 +50,6 @@ AppController *gApp;
 + (NSString *)playerName {
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   if ([defaults objectForKey:@"playerName"] == nil) {
-    // return [UIDevice currentDevice].name;
     return [NSString stringWithUTF8String:"The Dude"];
   } else {
     return [defaults stringForKey:@"playerName"];
@@ -169,10 +168,11 @@ AppController *gApp;
         };
     controller.extendedGamepad.buttonA.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleJumpPress];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleJumpRelease];
+      }
     };
     controller.extendedGamepad.buttonB.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
@@ -183,45 +183,51 @@ AppController *gApp;
     };
     controller.extendedGamepad.buttonX.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handlePunchPress];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handlePunchRelease];
+      }
     };
     controller.extendedGamepad.buttonY.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleThrowPress];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleThrowRelease];
+      }
     };
     controller.extendedGamepad.leftShoulder.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleRun1Press];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleRun1Release];
+      }
     };
     controller.extendedGamepad.rightShoulder.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleRun2Press];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleRun2Release];
+      }
     };
     controller.extendedGamepad.leftTrigger.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleRun3Press];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleRun3Release];
+      }
     };
     controller.extendedGamepad.rightTrigger.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleRun4Press];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleRun4Release];
+      }
     };
     controller.extendedGamepad.leftThumbstick.valueChangedHandler =
         ^(GCControllerDirectionPad *dpad, float xValue, float yValue) {
@@ -240,45 +246,51 @@ AppController *gApp;
         };
     controller.gamepad.buttonA.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleJumpPress];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleJumpRelease];
+      }
     };
     controller.gamepad.buttonB.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleBombPress];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleBombRelease];
+      }
     };
     controller.gamepad.buttonX.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handlePunchPress];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handlePunchRelease];
+      }
     };
     controller.gamepad.buttonY.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleThrowPress];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleThrowRelease];
+      }
     };
     controller.gamepad.leftShoulder.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleRun1Press];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleRun1Release];
+      }
     };
     controller.gamepad.rightShoulder.valueChangedHandler = ^(
         GCControllerButtonInput *button, float value, BOOL pressed) {
-      if (pressed)
+      if (pressed) {
         [[RemoteViewController sharedRemoteViewController] handleRun2Press];
-      else
+      } else {
         [[RemoteViewController sharedRemoteViewController] handleRun2Release];
+      }
     };
   }
   // all controllers should have this..
@@ -332,15 +344,19 @@ AppController *gApp;
   CGRect frame;
 
   if (haveControllers) {
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
       frame = CGRectMake(0, 0, 300, 290);
-    else
+    }
+    else {
       frame = CGRectMake(0, 0, 300, 260);
+    }
   } else {
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
       frame = CGRectMake(0, 0, 300, 230);
-    else
+    }
+    else {
       frame = CGRectMake(0, 0, 300, 200);
+    }
   }
   frame.origin.x =
       (_navController.view.bounds.size.width - frame.size.width) / 2.0;
@@ -588,26 +604,6 @@ AppController *gApp;
   RemoteViewController *r =
       [[[RemoteViewController alloc] initWithAddress:addr
                                              andSize:size] autorelease];
-  [_navController pushViewController:r animated:YES];
-}
-- (void)browserViewController:(BrowserViewController *)bvc
-           didResolveInstance:(NSNetService *)netService {
-  if (!netService)
-    return;
-
-  // see if we've got an ipv4 address in there..
-  bool haveV4 = NO;
-  for (NSData *addr in [netService addresses]) {
-    struct sockaddr *sa = (struct sockaddr *)[addr bytes];
-    if (sa->sa_family == AF_INET6) {
-    } else {
-      haveV4 = YES;
-      break;
-    }
-  }
-
-  RemoteViewController *r = [[[RemoteViewController alloc]
-      initWithNetService:netService] autorelease];
   [_navController pushViewController:r animated:YES];
 }
 

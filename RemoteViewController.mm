@@ -188,12 +188,12 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     if (kCFSocketSuccess !=
         CFSocketSetAddress(_cfSocket6, (CFDataRef)address6)) {
       NSLog(@"ERROR ON CFSocketSetAddress for ipv6 socket");
-      if (_cfSocket6)
+      if (_cfSocket6) {
         CFRelease(_cfSocket6);
+      }
       _cfSocket6 = NULL;
     }
     if (_cfSocket6 != NULL) {
-
       _socket6 = CFSocketGetNative(_cfSocket6);
 
       // set up a run loop source for the socket
@@ -234,8 +234,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
       if (kCFSocketSuccess !=
           CFSocketSetAddress(_cfSocket4, (CFDataRef)address4)) {
         NSLog(@"ERROR ON CFSocketSetAddress for ipv4 socket\n");
-        if (_cfSocket4)
+        if (_cfSocket4) {
           CFRelease(_cfSocket4);
+        }
         _cfSocket4 = NULL;
       }
       if (_cfSocket4 != NULL) {
@@ -269,50 +270,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 - (id)initWithAddress:(struct sockaddr)addr andSize:(int)sz {
   gRemoteViewController = self;
   [super init];
-
   _newStyle = YES;
   _addrCount = 1;
-
   memcpy(&_addresses[0], &addr, sz);
   _addressSizes[0] = sz;
-
   [self initCommon];
-
-  return self;
-}
-
-- (id)initWithNetService:(NSNetService *)netService {
-
-  _newStyle = NO;
-
-  gRemoteViewController = self;
-  [super init];
-
-  // make a list of all these addresses.. we'll ping them
-  // now and then and use whichever is fastest..
-  // (whats the right thing to do here?...)
-  NSArray *addresses = [netService addresses];
-  _addrCount = static_cast<unsigned int>([addresses count]);
-  if (_addrCount > REMOTE_VIEW_CONTROLLER_MAX_ADDRESSES) {
-    _addrCount = REMOTE_VIEW_CONTROLLER_MAX_ADDRESSES;
-  }
-
-  for (unsigned int i = 0; i < _addrCount; i++) {
-    struct sockaddr *sa =
-        (struct sockaddr *)[[addresses objectAtIndex:i] bytes];
-    if (sa->sa_family == AF_INET) {
-      memcpy(&_addresses[i], sa, sizeof(sockaddr_in));
-      _addressSizes[i] = sizeof(sockaddr_in);
-    } else if (sa->sa_family == AF_INET6) {
-      memcpy(&_addresses[i], sa, sizeof(sockaddr_in6));
-      _addressSizes[i] = sizeof(sockaddr_in6);
-    } else {
-      NSLog(@"GOT UNRECOGNIZED...!");
-    }
-  }
-
-  [self initCommon];
-
   return self;
 }
 
@@ -343,10 +305,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   // we use # for a special purpose so gotta clear them out...
   name = [name stringByReplacingOccurrencesOfString:@"#" withString:@""];
 
-  if (_newStyle and uidString != nil)
+  if (_newStyle and uidString != nil) {
     dName = [NSString stringWithFormat:@"%@#%@", name, uidString];
-  else
+  } else {
     dName = [UIDevice currentDevice].name;
+  }
   strncpy(buffer, dName.UTF8String, sizeof(buffer));
   buffer[sizeof(buffer) - 1] = 0; // make sure its capped in case it overran..
 
@@ -360,22 +323,26 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     struct sockaddr *sa = (sockaddr *)&_addresses[i];
     UInt8 data[5 + nameLen];
     data[0] = BS_REMOTE_MSG_ID_REQUEST;
-    data[1] =
-        BS_REMOTE_PROTOCOL_VERSION; // old protocol version - cant really change
-                                    // this cleanly without breaking things so
-                                    // we now use data[4]
+
+    // old protocol version - cant really change this cleanly without breaking
+    // things so we now use data[4]
+    data[1] = BS_REMOTE_PROTOCOL_VERSION;
+
     *(short *)&data[2] = _idRequestKey;
-    data[4] =
-        50; // this is now used for protocol version *request* - specifying 50
-            // means we want version 2 (yes, it's ugly; i know)
+
+    // this is now used for protocol version *request* - specifying 50
+    // means we want version 2 (yes, it's ugly; i know)
+    data[4] = 50;
+
     strncpy((char *)data + 5, buffer, nameLen);
     int s;
-    if (sa->sa_family == AF_INET6)
+    if (sa->sa_family == AF_INET6) {
       s = _socket6;
-    else if (sa->sa_family == AF_INET)
+    } else if (sa->sa_family == AF_INET) {
       s = _socket4;
-    else
+    } else {
       abort();
+    }
 
     int err = static_cast<int>(sendto(
         s, data, 5 + nameLen, 0, (sockaddr *)&_addresses[i], _addressSizes[i]));
@@ -403,7 +370,7 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
       return;
     }
 
-    // shoot off another disconnect notice
+    // fire off another disconnect notice
     if (_id != -1) {
       UInt8 data[2] = {BS_REMOTE_MSG_DISCONNECT, _id};
       if (_haveV4) {
@@ -430,10 +397,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   } else {
     // ok we've got at least one state we havn't heard confirmation for yet..
     // lets ship 'em out..
-    if (_usingProtocolV2)
+    if (_usingProtocolV2) {
       [self shipUnAckedStatesV2];
-    else
+    } else {
       [self shipUnAckedStatesV1];
+    }
   }
 
   // if we don't have an ID yet, keep sending off those requests...
@@ -451,21 +419,22 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 
     float val = _averageLag * 0.5;
 
-    if (val < 0.1)
+    if (val < 0.1) {
       _lagMeter.textColor = [UIColor colorWithRed:0.5
                                             green:1.0
                                              blue:0.5
                                             alpha:1.0];
-    else if (val < 0.2)
+    } else if (val < 0.2) {
       _lagMeter.textColor = [UIColor colorWithRed:1.0
                                             green:0.7
                                              blue:0.4
                                             alpha:1.0];
-    else
+    } else {
       _lagMeter.textColor = [UIColor colorWithRed:1.0
                                             green:0.4
                                              blue:0.4
                                             alpha:1.0];
+    }
 
     _lagMeter.text = [NSString stringWithFormat:@"lag: %.2f", val];
     _currentLag = 0.0;
@@ -486,7 +455,6 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
       [AppController debugPrint:@"The game has shut down."];
       [self tryToDie];
       return;
-      // break;
     }
 
     if (!_wantToLeave and !_wantToDie) {
@@ -612,10 +580,12 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   if (_id != -1) {
 
     UInt8 statesToSend = _nextState - _requestedState;
-    if (statesToSend > 11)
+    if (statesToSend > 11) {
       statesToSend = 11;
-    if (statesToSend < 1)
+    }
+    if (statesToSend < 1) {
       return;
+    }
 
     UInt8 data[150];
     data[0] = BS_REMOTE_MSG_STATE2;
@@ -633,8 +603,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
       val[0] = _statesV2[s] & 0xFF;
       val[1] = (_statesV2[s] >> 8) & 0xFF;
       val[2] = (_statesV2[s] >> 16) & 0xFF;
-      if (_stateLastSentTimes[s] != 0.0)
+      if (_stateLastSentTimes[s] != 0.0) {
         retransmitCount++;
+      }
       _stateLastSentTimes[s] = curTime;
       s++;
       val += 3;
@@ -646,8 +617,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     }
     if (_haveV6) {
       int err = static_cast<int>(send(_socket6, data, 4 + 3 * statesToSend, 0));
-      if (err == -1)
+      if (err == -1) {
         NSLog(@"ERROR %d on v6 sendto\n", errno);
+      }
     }
   }
 }
@@ -662,10 +634,12 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   if (_id != -1) {
 
     UInt8 statesToSend = _nextState - _requestedState;
-    if (statesToSend > 11)
+    if (statesToSend > 11) {
       statesToSend = 11;
-    if (statesToSend < 1)
+    }
+    if (statesToSend < 1) {
       return;
+    }
 
     UInt8 data[100];
     data[0] = BS_REMOTE_MSG_STATE;
@@ -681,21 +655,24 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     UInt16 *val = (UInt16 *)(data + 4);
     for (int i = 0; i < statesToSend; i++) {
       *val = _statesV1[s];
-      if (_stateLastSentTimes[s] != 0.0)
+      if (_stateLastSentTimes[s] != 0.0) {
         retransmitCount++;
+      }
       _stateLastSentTimes[s] = curTime;
       s++;
       val++;
     }
     if (_haveV4) {
       int err = static_cast<int>(send(_socket4, data, 4 + 2 * statesToSend, 0));
-      if (err == -1)
+      if (err == -1) {
         NSLog(@"ERROR %d on v4 sendto\n", errno);
+      }
     }
     if (_haveV6) {
       int err = static_cast<int>(send(_socket6, data, 4 + 2 * statesToSend, 0));
-      if (err == -1)
+      if (err == -1) {
         NSLog(@"ERROR %d on v6 sendto\n", errno);
+      }
     }
   }
 }
@@ -711,16 +688,18 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   UInt32 s = _buttonStateV2; // buttons
 
   int hVal = (int)(256.0f * (0.5f + _dPadStateH * 0.5f));
-  if (hVal < 0)
+  if (hVal < 0) {
     hVal = 0;
-  else if (hVal > 255)
+  } else if (hVal > 255) {
     hVal = 255;
+  }
 
   int vVal = (int)(256.0f * (0.5f + _dPadStateV * 0.5f));
-  if (vVal < 0)
+  if (vVal < 0) {
     vVal = 0;
-  else if (vVal > 255)
+  } else if (vVal > 255) {
     vVal = 255;
+  }
 
   s |= hVal << 8;
   s |= vVal << 16;
@@ -729,8 +708,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   // (analog joystick noise can send a bunch of redundant states through here)
   // The exception is if forced is true, which is the case with packets that
   // double as keepalives.
-  if (s == _lastSentState and not force)
+  if (s == _lastSentState and not force) {
     return;
+  }
 
   _stateBirthTimes[_nextState] = CACurrentMediaTime();
   _stateLastSentTimes[_nextState] = 0;
@@ -897,57 +877,65 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 
 - (void)handleRun1Press {
   _run1Pressed = true;
-  if (_run1Pressed || _run2Pressed || _run3Pressed || _run4Pressed)
+  if (_run1Pressed || _run2Pressed || _run3Pressed || _run4Pressed) {
     _buttonStateV2 |= BS_REMOTE_STATE2_RUN;
+  }
   [self doStateChangeForced:NO];
 }
 
 - (void)handleRun1Release {
   _run1Pressed = false;
-  if (!_run1Pressed and !_run2Pressed and !_run3Pressed and !_run4Pressed)
+  if (!_run1Pressed and !_run2Pressed and !_run3Pressed and !_run4Pressed) {
     _buttonStateV2 &= ~BS_REMOTE_STATE2_RUN;
+  }
   [self doStateChangeForced:NO];
 }
 
 - (void)handleRun2Press {
   _run2Pressed = true;
-  if (_run1Pressed || _run2Pressed || _run3Pressed || _run4Pressed)
+  if (_run1Pressed || _run2Pressed || _run3Pressed || _run4Pressed) {
     _buttonStateV2 |= BS_REMOTE_STATE2_RUN;
+  }
   [self doStateChangeForced:NO];
 }
 
 - (void)handleRun2Release {
   _run2Pressed = false;
-  if (!_run1Pressed and !_run2Pressed and !_run3Pressed and !_run4Pressed)
+  if (!_run1Pressed and !_run2Pressed and !_run3Pressed and !_run4Pressed) {
     _buttonStateV2 &= ~BS_REMOTE_STATE2_RUN;
+  }
   [self doStateChangeForced:NO];
 }
 
 - (void)handleRun3Press {
   _run3Pressed = true;
-  if (_run1Pressed || _run2Pressed || _run3Pressed || _run4Pressed)
+  if (_run1Pressed || _run2Pressed || _run3Pressed || _run4Pressed) {
     _buttonStateV2 |= BS_REMOTE_STATE2_RUN;
+  }
   [self doStateChangeForced:NO];
 }
 
 - (void)handleRun3Release {
   _run3Pressed = false;
-  if (!_run1Pressed and !_run2Pressed and !_run3Pressed and !_run4Pressed)
+  if (!_run1Pressed and !_run2Pressed and !_run3Pressed and !_run4Pressed) {
     _buttonStateV2 &= ~BS_REMOTE_STATE2_RUN;
+  }
   [self doStateChangeForced:NO];
 }
 
 - (void)handleRun4Press {
   _run4Pressed = true;
-  if (_run1Pressed || _run2Pressed || _run3Pressed || _run4Pressed)
+  if (_run1Pressed || _run2Pressed || _run3Pressed || _run4Pressed) {
     _buttonStateV2 |= BS_REMOTE_STATE2_RUN;
+  }
   [self doStateChangeForced:NO];
 }
 
 - (void)handleRun4Release {
   _run4Pressed = false;
-  if (!_run1Pressed and !_run2Pressed and !_run3Pressed and !_run4Pressed)
+  if (!_run1Pressed and !_run2Pressed and !_run3Pressed and !_run4Pressed) {
     _buttonStateV2 &= ~BS_REMOTE_STATE2_RUN;
+  }
   [self doStateChangeForced:NO];
 }
 
@@ -1017,7 +1005,6 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   CGFloat lagMeterYAxis = height - 12;
 
   if (@available(iOS 11.0, *)) {
-
     lagMeterYAxis =
         lagMeterYAxis -
         UIApplication.sharedApplication.keyWindow.safeAreaInsets.bottom;
@@ -1473,10 +1460,12 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   if (_id != -1) {
     UInt8 data[2] = {BS_REMOTE_MSG_DISCONNECT, _id};
 
-    if (_haveV4)
+    if (_haveV4) {
       send(_socket4, data, sizeof(data), 0);
-    if (_haveV6)
+    }
+    if (_haveV6) {
       send(_socket6, data, sizeof(data), 0);
+    }
   }
 
   if (_cfSocket4) {
@@ -1523,8 +1512,6 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
-  // if prefs are up, any touch closes them
-  //[[AppController sharedApp] hidePrefs];
 
   for (UITouch *touch in touches) {
 
@@ -1556,8 +1543,8 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
         [self doStateChangeForced:NO];
 
         _lastDPadTouchTime = time;
-        _lastDPadTouchPosX = 0.0; //_dPadBaseX;
-        _lastDPadTouchPosY = 0.0; //_dPadBaseY;
+        _lastDPadTouchPosX = 0.0;
+        _lastDPadTouchPosY = 0.0;
         _dPadHasMoved = NO;
 
         if (_floating) {
@@ -1663,44 +1650,46 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     float angle = RAD_TO_DEG(atan(_dPadStateH / _dPadStateV));
     if (_dPadStateH > 0) {
       if (angle > (90.0 - 22.5)) {
+        // right
         _dPadStateV = 0.0;
-      } // right
-      else if (angle > 45.0 - 22.5) {
+      } else if (angle > 45.0 - 22.5) {
+        // down-right
         _dPadStateV = _dPadStateH = fmax(fabs(_dPadStateH), _dPadStateV);
-      } // down-right
-      else if (angle > 0) {
+      } else if (angle > 0) {
+        // down
         _dPadStateH = 0;
-      } // down
-      else if (angle > -45.0 + 22.5) {
+      } else if (angle > -45.0 + 22.5) {
+        // up
         _dPadStateH = 0;
-      } // up
-      else if (angle > -45.0 - 22.5) {
+      } else if (angle > -45.0 - 22.5) {
+        // up-right
         _dPadStateV = _dPadStateH = fmax(fabs(_dPadStateH), fabs(_dPadStateV));
         _dPadStateV *= -1.0;
-      } // up-right
-      else {
+      } else {
+        // right
         _dPadStateV = 0;
-      } // right
+      }
     } else {
+      // left
       if (angle > (90.0 - 22.5)) {
         _dPadStateV = 0.0;
-      } // left
-      else if (angle > 45.0 - 22.5) {
+      } else if (angle > 45.0 - 22.5) {
+        // up left
         _dPadStateV = _dPadStateH = -fmax(fabs(_dPadStateH), fabs(_dPadStateV));
-      } // up left
-      else if (angle > 0) {
+      } else if (angle > 0) {
+        // up
         _dPadStateH = 0;
-      } // up
-      else if (angle > -45.0 + 22.5) {
+      } else if (angle > -45.0 + 22.5) {
         _dPadStateH = 0;
       } // down
       else if (angle > -45.0 - 22.5) {
+        // down left
         _dPadStateV = _dPadStateH = fmax(fabs(_dPadStateH), fabs(_dPadStateV));
         _dPadStateH *= -1.0;
-      } // down left
-      else {
+      } else {
+        // left
         _dPadStateV = 0;
-      } // left
+      }
     }
   }
 
@@ -1765,8 +1754,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     xDiff = p.x - pb2.x;
     yDiff = p.y - pb2.y;
     punchLen = len = sqrt(xDiff * xDiff + yDiff * yDiff);
-    if (isMove && len < threshold)
+    if (isMove && len < threshold) {
       punchHeld = YES;
+    }
 
     // throw
     img = _buttonImageThrow;
@@ -1778,8 +1768,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     xDiff = p.x - pb2.x;
     yDiff = p.y - pb2.y;
     throwLen = len = sqrt(xDiff * xDiff + yDiff * yDiff);
-    if (isMove && len < threshold)
+    if (isMove && len < threshold) {
       throwHeld = YES;
+    }
 
     // jump
     img = _buttonImageJump;
@@ -1791,8 +1782,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     xDiff = p.x - pb2.x;
     yDiff = p.y - pb2.y;
     jumpLen = len = sqrt(xDiff * xDiff + yDiff * yDiff);
-    if (isMove && len < threshold)
+    if (isMove && len < threshold) {
       jumpHeld = YES;
+    }
 
     // bomb
     img = _buttonImageBomb;
@@ -1804,8 +1796,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     xDiff = p.x - pb2.x;
     yDiff = p.y - pb2.y;
     bombLen = len = sqrt(xDiff * xDiff + yDiff * yDiff);
-    if (isMove && len < threshold)
+    if (isMove && len < threshold) {
       bombHeld = YES;
+    }
 
     // ok now lets take care of fringe areas and non-moved touches
     // a touch in our button area should *always* affect at least one button
@@ -1965,10 +1958,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
           // greater.
           float xDiff = pd.x - _lastDPadTouchPosX;
           float yDiff = pd.y - _lastDPadTouchPosY;
-          if (fabs(xDiff) > fabs(yDiff))
+          if (fabs(xDiff) > fabs(yDiff)) {
             yDiff = 0;
-          else
+          } else {
             xDiff = 0;
+          }
           [self setDPadX:_lastDPadTouchPosX + xDiff
                     andY:_lastDPadTouchPosY + yDiff
               andPressed:YES
@@ -2025,8 +2019,9 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
         didAccelerate:(UIAcceleration *)acceleration {
 
   // ignore these in non-tilt-modes
-  if (!_tiltMode)
+  if (!_tiltMode) {
     return;
+  }
 
   float rawX;
   float rawY;
@@ -2064,20 +2059,20 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   // float tilt = acos(_tiltNeutralY*rawY+_tiltNeutralZ*rawZ);
   float angle = atan2(rawZ, rawY) - atan2(_tiltNeutralZ, _tiltNeutralY);
   // printf("angle %f\n",angle);
-  if (angle < -3.141592)
+  if (angle < -3.141592) {
     angle += 2.0 * 3.141592;
-  else if (angle > 3.141592)
+  } else if (angle > 3.141592) {
     angle -= 2.0 * 3.141592;
-  // printf("ANGLE %f\n",angle);
+  }
 
   y = -angle * 0.7;
 
   // remap so we have a section of zero at the bottom
   float len = sqrt(x * x + y * y);
   float newLen = len - 0.02;
-  if (newLen <= 0)
+  if (newLen <= 0) {
     x = y = 0;
-  else {
+  } else {
     x *= newLen / len;
     y *= newLen / len;
   }

@@ -103,7 +103,6 @@ enum BSRemoteMsg {
 + (RemoteViewController *)sharedRemoteViewController;
 
 - (id)initWithAddress:(struct sockaddr)a andSize:(int)s;
-- (id)initWithNetService:(NSNetService *)netService;
 - (void)tiltModeChanged:(NSNumber *)enabled;
 - (void)controllerDPadSensitivityChanged:(float)value;
 
