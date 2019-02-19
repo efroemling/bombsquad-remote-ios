@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 
-@interface HoverView : UIView
-{ }
+@interface HoverView : UIView {
+}
 
 @end

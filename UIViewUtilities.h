@@ -2,9 +2,9 @@
 
 @interface UIView (Utilities)
 
-- (void) transitionInBottom;
-- (void) transitionOutBottom;
-- (void) transitionInTop;
-- (void) transitionOutTop;
+- (void)transitionInBottom;
+- (void)transitionOutBottom;
+- (void)transitionInTop;
+- (void)transitionOutTop;
 
 @end
