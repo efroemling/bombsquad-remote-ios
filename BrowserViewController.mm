@@ -661,7 +661,6 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     int index = 0;
     for (auto i : _games) {
       if (index == indexPath.row) {
-        // cout << "THEY TAPPED ON " << i.first << endl;
         [self.delegate
             browserViewController:self
                  didSelectAddress:(struct sockaddr *)(&i.second.addr)withSize
@@ -731,8 +730,8 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     addr6.sin6_len = sizeof(addr6);
     addr6.sin6_family = AF_INET6;
     addr6.sin6_port = htons(43210);
-    addr6.sin6_addr = in6addr_any;
     addr6.sin6_scope_id = _scanSocket6Interface;
+    // use the magical 'send-to-all-ipv6 devices' multicast address..
     int success = inet_pton(AF_INET6, "FF02::1", &addr6.sin6_addr) == 1;
     assert(success);
     UInt8 data[1] = {BS_REMOTE_MSG_GAME_QUERY};
