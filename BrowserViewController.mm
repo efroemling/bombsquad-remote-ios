@@ -104,11 +104,11 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   if (amt == -1) {
     // any case where we'd need to look at errors here?...
   }
-  //  if (s == _scanSocket4Raw) {
-  //    NSLog(@"GOT RESPONSE FROM 4");
-  //  } else if (s == _scanSocket6Raw) {
-  //    NSLog(@"GOT RESPONSE FROM 6");
-  //  }
+  // if (s == _scanSocket4Raw) {
+  //   NSLog(@"GOT RESPONSE FROM 4");
+  // } else if (s == _scanSocket6Raw) {
+  //   NSLog(@"GOT RESPONSE FROM 6");
+  // }
   if (amt > 0) {
 
     switch (buffer[0]) {
@@ -123,15 +123,21 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
           buffer[amt] = 0;
         }
 
-        // note: if we get multiple responses for a game, the slowest
-        // to return is gonna overwrite the rest of them. That doesn't
-        // seem like a good thing...
-
         // if this entry is new, reload the list
         bool isNew = (_games.find(game_name) == _games.end());
+
+        CFTimeInterval curTime = CACurrentMediaTime();
+
+        // only update its addr if its new or if we haven't heard from it
+        // in a few seconds... this way we'll tend to use the address
+        // we heard back from first if there's multiple addrs for the same game
+        if (isNew || (curTime - _games[game_name].lastTime > 2.0f)) {
+          memcpy(&_games[game_name].addr, &addr, l);
+          _games[game_name].addrSize = l;
+        }
+
         _games[game_name].lastTime = CACurrentMediaTime();
-        memcpy(&_games[game_name].addr, &addr, l);
-        _games[game_name].addrSize = l;
+
         if (isNew) {
           [self.tableView reloadData];
         }
