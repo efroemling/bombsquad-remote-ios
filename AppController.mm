@@ -599,7 +599,7 @@ AppController *gApp;
 }
 
 - (void)browserViewController:(BrowserViewController *)bvc
-             didSelectAddress:(struct sockaddr)addr
+             didSelectAddress:(struct sockaddr*)addr
                      withSize:(int)size {
   RemoteViewController *r =
       [[[RemoteViewController alloc] initWithAddress:addr

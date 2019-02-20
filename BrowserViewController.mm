@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <iostream>
+#include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -69,10 +70,15 @@ using namespace std;
 
 - (void)stop {
 
-  if (_scanSocket) {
-    CFSocketInvalidate(_scanSocket);
-    CFRelease(_scanSocket);
-    _scanSocket = NULL;
+  if (_scanSocket4) {
+    CFSocketInvalidate(_scanSocket4);
+    CFRelease(_scanSocket4);
+    _scanSocket4 = NULL;
+  }
+  if (_scanSocket6) {
+    CFSocketInvalidate(_scanSocket6);
+    CFRelease(_scanSocket6);
+    _scanSocket6 = NULL;
   }
 
   // clear any existing...
@@ -90,18 +96,26 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 
 - (void)readFromSocket:(int)s {
   char buffer[256];
-  sockaddr addr;
+  sockaddr_storage addr;
   socklen_t l = sizeof(addr);
-  int amt = static_cast<int>(recvfrom(s, buffer, sizeof(buffer), 0, &addr, &l));
+  int amt = static_cast<int>(
+      recvfrom(s, buffer, sizeof(buffer), 0, (sockaddr *)&addr, &l));
 
   if (amt == -1) {
     // any case where we'd need to look at errors here?...
   }
+  //  if (s == _scanSocket4Raw) {
+  //    NSLog(@"GOT RESPONSE FROM 4");
+  //  } else if (s == _scanSocket6Raw) {
+  //    NSLog(@"GOT RESPONSE FROM 6");
+  //  }
   if (amt > 0) {
 
     switch (buffer[0]) {
     case BS_REMOTE_MSG_GAME_RESPONSE: {
       if (amt > 1) {
+        const char *game_name = buffer + 1;
+
         // the rest of the packet is the game name
         if (amt >= sizeof(buffer)) {
           buffer[sizeof(buffer) - 1] = 0;
@@ -109,13 +123,18 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
           buffer[amt] = 0;
         }
 
+        // note: if we get multiple responses for a game, the slowest
+        // to return is gonna overwrite the rest of them. That doesn't
+        // seem like a good thing...
+
         // if this entry is new, reload the list
-        bool isNew = (_games.find(buffer + 1) == _games.end());
-        _games[buffer + 1].lastTime = CACurrentMediaTime();
-        memcpy(&_games[buffer + 1].addr, &addr, l);
-        _games[buffer + 1].addrSize = l;
-        if (isNew)
+        bool isNew = (_games.find(game_name) == _games.end());
+        _games[game_name].lastTime = CACurrentMediaTime();
+        memcpy(&_games[game_name].addr, &addr, l);
+        _games[game_name].addrSize = l;
+        if (isNew) {
           [self.tableView reloadData];
+        }
         break;
       }
     }
@@ -127,20 +146,18 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 
 - (void)start {
 
-  // create our scan socket...
-  if (_scanSocket == NULL) {
+  // set up our ipv4 broadcast socket
+  if (_scanSocket4 == NULL) {
     CFSocketContext socketCtxt = {0, self, NULL, NULL, NULL};
-    _scanSocket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_DGRAM,
-                                 IPPROTO_UDP, kCFSocketReadCallBack,
-                                 (CFSocketCallBack)&readCallback, &socketCtxt);
+    _scanSocket4 = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_DGRAM,
+                                  IPPROTO_UDP, kCFSocketReadCallBack,
+                                  (CFSocketCallBack)&readCallback, &socketCtxt);
     ;
-    if (_scanSocket == NULL) {
+    if (_scanSocket4 == NULL) {
       NSLog(@"ERROR CREATING IPv4 SCANNER SOCKET");
-      abort();
-    }
-
-    // bind it to a any port
-    if (_scanSocket != NULL) {
+      // abort();
+    } else {
+      // bind it to a any port
       struct sockaddr_in addr4;
       memset(&addr4, 0, sizeof(addr4));
       addr4.sin_len = sizeof(addr4);
@@ -150,18 +167,18 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
       NSData *address4 = [NSData dataWithBytes:&addr4 length:sizeof(addr4)];
 
       if (kCFSocketSuccess !=
-          CFSocketSetAddress(_scanSocket, (CFDataRef)address4)) {
-        NSLog(@"ERROR ON CFSocketSetAddress for scan socket");
-        if (_scanSocket) {
-          CFRelease(_scanSocket);
+          CFSocketSetAddress(_scanSocket4, (CFDataRef)address4)) {
+        NSLog(@"ERROR ON CFSocketSetAddress for ipv4 scan socket");
+        if (_scanSocket4) {
+          CFRelease(_scanSocket4);
         }
-        _scanSocket = NULL;
+        _scanSocket4 = NULL;
       }
-      if (_scanSocket != NULL) {
-        _scanSocketRaw = CFSocketGetNative(_scanSocket);
+      if (_scanSocket4 != NULL) {
+        _scanSocket4Raw = CFSocketGetNative(_scanSocket4);
         // set broadcast..
         int opVal = 1;
-        int result = setsockopt(_scanSocketRaw, SOL_SOCKET, SO_BROADCAST,
+        int result = setsockopt(_scanSocket4Raw, SOL_SOCKET, SO_BROADCAST,
                                 &opVal, sizeof(opVal));
         if (result != 0) {
           NSLog(@"Error setting up ipv4 scanner socket");
@@ -170,9 +187,98 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
         // wire this socket up to our run loop
         CFRunLoopRef cfrl = CFRunLoopGetCurrent();
         CFRunLoopSourceRef source =
-            CFSocketCreateRunLoopSource(kCFAllocatorDefault, _scanSocket, 0);
+            CFSocketCreateRunLoopSource(kCFAllocatorDefault, _scanSocket4, 0);
         CFRunLoopAddSource(cfrl, source, kCFRunLoopCommonModes);
         CFRelease(source);
+        NSLog(@"ipv4 scan socket created successfully.");
+      }
+    }
+  }
+
+  // set up our ipv6 broadcast socket
+  if (_scanSocket6 == NULL) {
+    _scanSocket6Interface = -1;
+    // ok, the first thing we do is try to find our wifi interface
+    // which is where we'll send out multicast packets from.
+    // on iOS this should be en0, en1, etc.
+    // Theoretically we could create a socket for every interface we come
+    // across but perhaps it's better to strictly limit to wifi?...
+    // (for instance the awdl0 interface sounds like peer to peer wifi
+    // used for air-drop/etc. and there may be weird performance issues
+    // if we're sending out packets on there AND regular wifi)
+    struct ifaddrs *ifaddr;
+    if (getifaddrs(&ifaddr) != -1) {
+      for (ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL) {
+          NSLog(@"Got null ifa_addr; odd.");
+          continue;
+        }
+        if ((ifa->ifa_addr->sa_family == AF_INET6) &&
+            !(ifa->ifa_flags & IFF_LOOPBACK) &&
+            !(ifa->ifa_flags & IFF_POINTOPOINT) &&
+            (ifa->ifa_flags & IFF_MULTICAST)) {
+          int index = if_nametoindex(ifa->ifa_name);
+          if (strlen(ifa->ifa_name) > 2 && !strncmp(ifa->ifa_name, "en", 2)) {
+            _scanSocket6Interface = index;
+            break;
+          }
+        }
+      }
+      freeifaddrs(ifaddr);
+    }
+
+    if (_scanSocket6Interface == -1) {
+      NSLog(@"Unable to find suitable ipv6 interface.");
+    } else {
+      CFSocketContext socketCtxt = {0, self, NULL, NULL, NULL};
+      _scanSocket6 = CFSocketCreate(
+          kCFAllocatorDefault, PF_INET6, SOCK_DGRAM, IPPROTO_UDP,
+          kCFSocketReadCallBack, (CFSocketCallBack)&readCallback, &socketCtxt);
+      ;
+      if (_scanSocket6 == NULL) {
+        NSLog(@"ERROR CREATING IPv6 SCANNER SOCKET");
+        // abort();
+      } else {
+        // bind it to a any port
+        struct sockaddr_in6 addr6;
+        memset(&addr6, 0, sizeof(addr6));
+        addr6.sin6_len = sizeof(addr6);
+        addr6.sin6_family = AF_INET6;
+        addr6.sin6_port = 0;
+        addr6.sin6_addr = in6addr_any;
+        // addr6.sin6_scope_id = interface;  // is this necessary?
+        NSData *address6 = [NSData dataWithBytes:&addr6 length:sizeof(addr6)];
+
+        if (kCFSocketSuccess !=
+            CFSocketSetAddress(_scanSocket6, (CFDataRef)address6)) {
+          NSLog(@"ERROR ON CFSocketSetAddress for ipv6 scan socket");
+          if (_scanSocket6) {
+            CFRelease(_scanSocket6);
+          }
+          _scanSocket6 = NULL;
+        }
+        if (_scanSocket6 != NULL) {
+          _scanSocket6Raw = CFSocketGetNative(_scanSocket6);
+
+          int success = setsockopt(_scanSocket6Raw, IPPROTO_IPV6,
+                                   IPV6_MULTICAST_IF, &_scanSocket6Interface,
+                                   sizeof(_scanSocket6Interface)) == 0;
+          if (!success) {
+            NSLog(@"Error setting up ipv6 scanner socket");
+            if (_scanSocket6) {
+              CFRelease(_scanSocket6);
+            }
+            _scanSocket6 = NULL;
+          }
+
+          // wire this socket up to our run loop
+          CFRunLoopRef cfrl = CFRunLoopGetCurrent();
+          CFRunLoopSourceRef source =
+              CFSocketCreateRunLoopSource(kCFAllocatorDefault, _scanSocket6, 0);
+          CFRunLoopAddSource(cfrl, source, kCFRunLoopCommonModes);
+          CFRelease(source);
+          NSLog(@"ipv6 scan socket created successfully.");
+        }
       }
     }
   }
@@ -344,10 +450,10 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 
           // convert the IP to a string and print it:
           inet_ntop(p->ai_family, addr, ipstr, sizeof ipstr);
-          printf("  %s: %s\n", ipver, ipstr);
+          NSLog(@"  %s: %s\n", ipver, ipstr);
 
           [[AppController sharedApp] browserViewController:self
-                                          didSelectAddress:*p->ai_addr
+                                          didSelectAddress:p->ai_addr
                                                   withSize:p->ai_addrlen];
           break; // only do first
         }
@@ -478,34 +584,18 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     // doing this super-hacky for now with whatever space counts keep the text
     // from jittering - need to add custom text view and just set it
     // left-aligned.
-    if ([[UIScreen mainScreen] scale] > 1.0) {
-      if (_dotCount == 0) {
-        cell.textLabel.text =
-            [NSString stringWithFormat:@"%@", self.searchingForServicesString];
-      } else if (_dotCount == 1) {
-        cell.textLabel.text = [NSString
-            stringWithFormat:@".%@.", self.searchingForServicesString];
-      } else if (_dotCount == 2) {
-        cell.textLabel.text = [NSString
-            stringWithFormat:@"..%@..", self.searchingForServicesString];
-      } else if (_dotCount == 3) {
-        cell.textLabel.text = [NSString
-            stringWithFormat:@"...%@...", self.searchingForServicesString];
-      }
-    } else {
-      if (_dotCount == 0) {
-        cell.textLabel.text =
-            [NSString stringWithFormat:@"%@", self.searchingForServicesString];
-      } else if (_dotCount == 1) {
-        cell.textLabel.text = [NSString
-            stringWithFormat:@".%@.", self.searchingForServicesString];
-      } else if (_dotCount == 2) {
-        cell.textLabel.text = [NSString
-            stringWithFormat:@"..%@..", self.searchingForServicesString];
-      } else if (_dotCount == 3) {
-        cell.textLabel.text = [NSString
-            stringWithFormat:@"...%@...", self.searchingForServicesString];
-      }
+    if (_dotCount == 0) {
+      cell.textLabel.text =
+          [NSString stringWithFormat:@"%@", self.searchingForServicesString];
+    } else if (_dotCount == 1) {
+      cell.textLabel.text =
+          [NSString stringWithFormat:@".%@.", self.searchingForServicesString];
+    } else if (_dotCount == 2) {
+      cell.textLabel.text = [NSString
+          stringWithFormat:@"..%@..", self.searchingForServicesString];
+    } else if (_dotCount == 3) {
+      cell.textLabel.text = [NSString
+          stringWithFormat:@"...%@...", self.searchingForServicesString];
     }
     cell.textLabel.font = [UIFont boldSystemFontOfSize:24];
     cell.backgroundColor = [UIColor clearColor];
@@ -529,7 +619,7 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   if (_games.size() > 0) {
     int index = 0;
     cell.textLabel.text = @"unknown";
-    for (auto i: _games) {
+    for (auto i : _games) {
       if (index == indexPath.row) {
         cell.textLabel.text = [NSString stringWithUTF8String:i.first.c_str()];
       }
@@ -566,9 +656,10 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
     for (auto i : _games) {
       if (index == indexPath.row) {
         // cout << "THEY TAPPED ON " << i.first << endl;
-        [self.delegate browserViewController:self
-                            didSelectAddress:i.second.addr
-                                    withSize:i.second.addrSize];
+        [self.delegate
+            browserViewController:self
+                 didSelectAddress:(struct sockaddr *)(&i.second.addr)withSize
+                                 :i.second.addrSize];
         break;
       }
       index++;
@@ -581,58 +672,70 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
 - (void)update:(NSTimer *)timer {
   _dotCount = (_dotCount + 1) % 4;
 
-  if (_scanSocket != NULL) {
-
-    // broadcast game query packets to all our network interfaces
+  // fire off ipv4 broadcast packets on all our ipv4 interfaces
+  // (we use one socket here and just switch target addrs)
+  // NOTE TO SELF - remember to disable this periodically to test if IPv6
+  // scanning is working...
+  if (_scanSocket4 != NULL) {
     struct ifaddrs *ifaddr;
     if (getifaddrs(&ifaddr) != -1) {
       int i = 0;
       for (ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-        int family = ifa->ifa_addr->sa_family;
-        if (family == AF_INET) {
-          if (ifa->ifa_addr != NULL) {
-            sockaddr_in broadcastAddr;
-            memcpy(&broadcastAddr, ifa->ifa_addr, sizeof(sockaddr_in));
+        if (ifa->ifa_addr == NULL) {
+          NSLog(@"Got null ifa_addr; odd.");
+          continue;
+        }
+        if ((ifa->ifa_addr->sa_family == AF_INET) &&
+            !(ifa->ifa_flags & IFF_LOOPBACK) &&
+            !(ifa->ifa_flags & IFF_POINTOPOINT) &&
+            (ifa->ifa_flags & IFF_BROADCAST)) {
+          sockaddr_in broadcastAddr;
+          memcpy(&broadcastAddr, ifa->ifa_addr, sizeof(sockaddr_in));
+          UInt32 addr = ntohl(((sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr);
+          UInt32 subnet =
+              ntohl(((sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr);
+          UInt32 broadcast = addr | (~subnet);
+          broadcastAddr.sin_addr.s_addr = htonl(broadcast);
+          broadcastAddr.sin_port = htons(43210);
 
-            UInt32 addr =
-                ntohl(((sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr);
-            UInt32 subnet =
-                ntohl(((sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr);
-            UInt32 broadcast = addr | (~subnet);
+          UInt8 data[1] = {BS_REMOTE_MSG_GAME_QUERY};
 
-            broadcastAddr.sin_addr.s_addr = htonl(broadcast);
-            broadcastAddr.sin_port = htons(43210);
-
-            UInt8 data[1] = {BS_REMOTE_MSG_GAME_QUERY};
-
-            int err = static_cast<int>(sendto(_scanSocketRaw, data, 1, 0,
-                                              (sockaddr *)&broadcastAddr,
-                                              sizeof(broadcastAddr)));
-            if (err == -1) {
-              // let's note only unexpected errors...
-              if (errno != EHOSTDOWN && errno != EHOSTUNREACH) {
-                NSLog(@"ERROR %d on sendto for scanner socket\n", errno);
-              }
+          int err = static_cast<int>(sendto(_scanSocket4Raw, data, 1, 0,
+                                            (sockaddr *)&broadcastAddr,
+                                            sizeof(broadcastAddr)));
+          if (err == -1) {
+            // let's note only unexpected errors...
+            if (errno != EHOSTDOWN && errno != EHOSTUNREACH) {
+              NSLog(@"ERROR %d on sendto for scanner socket\n", errno);
             }
-
-            // cout << "ADDR IS " << ((addr>>24)&0xFF) << "." <<
-            // ((addr>>16)&0xFF) << "." << ((addr>>8)&0xFF) << "." <<
-            // ((addr>>0)&0xFF) << endl; cout << "NETMASK IS " <<
-            // ((subnet>>24)&0xFF) << "." << ((subnet>>16)&0xFF) << "." <<
-            // ((subnet>>8)&0xFF) << "." << ((subnet>>0)&0xFF) << endl; cout <<
-            // "BROADCAST IS " << ((broadcast>>24)&0xFF) << "." <<
-            // ((broadcast>>16)&0xFF) << "." << ((broadcast>>8)&0xFF) << "." <<
-            // ((broadcast>>0)&0xFF) << endl;
-            i++;
           }
         }
+        i++;
       }
+      freeifaddrs(ifaddr);
     }
   }
 
-  CFTimeInterval curTime = CACurrentMediaTime();
+  // Ok now for ipv6.
+  // In this case we've already picked a single interface we're sending
+  // multicast packets out to. Now just do the thing.
+  if (_scanSocket6 != NULL) {
+    struct sockaddr_in6 addr6;
+    memset(&addr6, 0, sizeof(addr6));
+    addr6.sin6_len = sizeof(addr6);
+    addr6.sin6_family = AF_INET6;
+    addr6.sin6_port = htons(43210);
+    addr6.sin6_addr = in6addr_any;
+    addr6.sin6_scope_id = _scanSocket6Interface;
+    int success = inet_pton(AF_INET6, "FF02::1", &addr6.sin6_addr) == 1;
+    assert(success);
+    UInt8 data[1] = {BS_REMOTE_MSG_GAME_QUERY};
+    long bytesSent = sendto(_scanSocket6Raw, data, 1, 0,
+                            (struct sockaddr *)&addr6, sizeof(addr6));
+  }
 
   // remove games from our list that we havn't heard from in a while
+  CFTimeInterval curTime = CACurrentMediaTime();
   map<string, BSRemoteGameEntry>::iterator i = _games.begin();
   map<string, BSRemoteGameEntry>::iterator iNext;
   bool changed = false;
@@ -661,10 +764,6 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   if (_games.size() == 0) {
     [self.tableView reloadData];
   }
-}
-
-- (void)cancelAction {
-  [self.delegate browserViewController:self didResolveInstance:nil];
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:

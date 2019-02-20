@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <iostream>
+#include <netdb.h>
 
 using namespace std;
 
@@ -267,12 +268,21 @@ static void readCallback(CFSocketRef cfSocket, CFSocketCallBackType type,
   }
 }
 
-- (id)initWithAddress:(struct sockaddr)addr andSize:(int)sz {
+- (id)initWithAddress:(struct sockaddr *)addr andSize:(int)sz {
   gRemoteViewController = self;
   [super init];
   _newStyle = YES;
   _addrCount = 1;
-  memcpy(&_addresses[0], &addr, sz);
+
+  if (true) {
+    char buffer[INET6_ADDRSTRLEN];
+    int err = getnameinfo((struct sockaddr *)addr, sz, buffer, sizeof(buffer),
+                          0, 0, NI_NUMERICHOST);
+    if (err == 0) {
+      NSLog(@"Connecting to %s", buffer);
+    }
+  }
+  memcpy(&_addresses[0], addr, sz);
   _addressSizes[0] = sz;
   [self initCommon];
   return self;

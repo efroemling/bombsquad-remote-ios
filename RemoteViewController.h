@@ -82,7 +82,7 @@ enum BSRemoteMsg {
   CFTimeInterval _lastLagUpdateTime;
   CFTimeInterval _averageLag;
 
-  struct sockaddr _addresses[REMOTE_VIEW_CONTROLLER_MAX_ADDRESSES];
+  struct sockaddr_storage _addresses[REMOTE_VIEW_CONTROLLER_MAX_ADDRESSES];
   int _addressSizes[REMOTE_VIEW_CONTROLLER_MAX_ADDRESSES];
 
   float _controllerDPadSensitivity;
@@ -102,7 +102,7 @@ enum BSRemoteMsg {
 
 + (RemoteViewController *)sharedRemoteViewController;
 
-- (id)initWithAddress:(struct sockaddr)a andSize:(int)s;
+- (id)initWithAddress:(struct sockaddr*)a andSize:(int)s;
 - (void)tiltModeChanged:(NSNumber *)enabled;
 - (void)controllerDPadSensitivityChanged:(float)value;
 

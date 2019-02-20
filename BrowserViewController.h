@@ -8,7 +8,7 @@
 
 struct BSRemoteGameEntry {
   CFTimeInterval lastTime;
-  struct sockaddr addr;
+  struct sockaddr_storage addr;
   int addrSize;
 };
 
@@ -18,7 +18,7 @@ struct BSRemoteGameEntry {
 // instances from the list. The ref parameter will be the selected (already
 // resolved) instance or nil if the user taps the 'Cancel' button (if shown).
 - (void)browserViewController:(BrowserViewController *)bvc
-             didSelectAddress:(struct sockaddr)addr
+             didSelectAddress:(struct sockaddr*)addr
                      withSize:(int)size;
 @end
 
@@ -35,8 +35,11 @@ struct BSRemoteGameEntry {
   BOOL _doingNameDialog;
   int _dotCount;
 
-  CFSocketRef _scanSocket;
-  int _scanSocketRaw;
+  CFSocketRef _scanSocket4;
+  int _scanSocket4Raw;
+  int _scanSocket6Interface;
+  CFSocketRef _scanSocket6;
+  int _scanSocket6Raw;
 
   std::map<std::string, BSRemoteGameEntry> _games;
 }
